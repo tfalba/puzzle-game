@@ -36,7 +36,7 @@ const isAdjacent = (a: number, b: number) => {
 };
 
 interface PuzzleBoardProps {
-  imageUrl: string; // your single square photo
+  imageUrl: string; // can be any aspect ratio now
 }
 
 export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
@@ -44,22 +44,43 @@ export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
 
   const [board, setBoard] = useState<(number | null)[]>([]);
   const [outie, setOutie] = useState<number | null>(null);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
 
-  //   const [outie, setOutie] = useState<number>()
+  // cropped square version of the image
+  const [squareImageUrl, setSquareImageUrl] = useState<string | null>(null);
 
-  //   // board: 9 cells with piece ids or null (empty slot)
-  //   const [board, setBoard] = useState<(number | null)[]>(() => {
-  //     const ids = shuffle(Array.from({ length: 9 }, (_, i) => i));
-  //     // choose one to be the "outside" piece
-  //     const outsideId = ids.pop() as number;
-  //     // setOutsidePiece(pieces[outsideId])
-  //     // remaining 8 go into the grid, plus one empty slot (null)
-  //     const initialBoard = shuffle([...ids, null]);
-  //     // you could store outsideId to display somewhere; for now we ignore it.
-  //     console.log("Outside piece:", outsideId, "initial board", initialBoard);
-  //     return initialBoard;
-  //   });
+  // Crop incoming image to a centered square using an offscreen canvas
+  useEffect(() => {
+    if (!imageUrl) return;
 
+    const img = new Image();
+    img.crossOrigin = "anonymous"; // helps if the image is hosted elsewhere
+
+    img.onload = () => {
+      const size = Math.min(img.width, img.height);
+      const sx = (img.width - size) / 2;
+      const sy = (img.height - size) / 2;
+
+      const canvas = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      ctx.drawImage(img, sx, sy, size, size, 0, 0, size, size);
+      const dataUrl = canvas.toDataURL("image/jpeg");
+      setSquareImageUrl(dataUrl);
+    };
+
+    img.onerror = () => {
+      // fallback: just use original if cropping fails
+      setSquareImageUrl(imageUrl);
+    };
+
+    img.src = imageUrl;
+  }, [imageUrl]);
+
+  // board: 9 cells with piece ids or null (empty slot)
   useEffect(() => {
     const ids = Array.from({ length: 9 }, (_, i) => i);
     const shuffled = shuffle(ids);
@@ -70,12 +91,9 @@ export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
     setBoard(board8);
   }, []);
 
-  const [dragIndex, setDragIndex] = useState<number | null>(null);
-
   const emptyIndex = board.findIndex((cell) => cell === null);
 
   const handleDragStart = (index: number) => {
-    // only allow dragging tiles that can move into the empty slot
     if (emptyIndex !== -1 && isAdjacent(index, emptyIndex)) {
       setDragIndex(index);
     }
@@ -101,13 +119,20 @@ export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
     e.preventDefault(); // allow drop
   };
 
-  // const outie: number = Array(9).find((_, i) => !board.includes(i));
-  if (!outie) return;
+  // wait until we know the outie and have the cropped image
+  if (outie === null || !squareImageUrl) {
+    return (
+      <div className="flex items-center justify-center min-h-[200px] text-nickBrown">
+        Loading puzzle…
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col items-center md:items-start gap-8">
+    <div className="flex flex-col items-center md:items-start gap-8 w-full max-w-3xl ">
       {/* title + CTA */}
-      <div className="text-center">
+      <div className="flex justify-center md:justify-between w-full flex-wrap px-8 md:px-0 gap-8">
+        <div className="">
         <h1 className="text-3xl font-semibold mb-3 text-nickBlack">
           Photo Puzzle
         </h1>
@@ -120,74 +145,84 @@ export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
             setBoard((prev) => {
               const ids = prev.filter((x): x is number => x !== null);
               const emptyCount = prev.length - ids.length;
-              const shuffled = shuffle(ids);
-              return shuffle([...shuffled, ...Array(emptyCount).fill(null)]);
+              const shuffledIds = shuffle(ids);
+              return shuffle([
+                ...shuffledIds,
+                ...Array(emptyCount).fill(null),
+              ]);
             })
           }
         >
           Shuffle
         </button>
-      
-      </div>
-      <div className="flex flex-col md:flex-row gap-8 items-center">
-
-      {/* puzzle grid */}
-      <div className="grid grid-cols-3 grid-rows-3 gap-1 bg-nickBlack p-1 rounded-xl">
-        {board.map((pieceId, index) => {
-          const isEmpty = pieceId === null;
-          const piece = isEmpty ? null : pieces[pieceId];
-          const canMove =
-            !isEmpty && emptyIndex !== -1 && isAdjacent(index, emptyIndex);
-
-          return (
-            <div
-              key={index}
-              className={`relative w-24 h-24 sm:w-28 sm:h-28 lg:w-36 lg:h-36 bg-nickCream overflow-hidden rounded-lg ${
-                isEmpty ? "opacity-40 border border-white" : ""
-              }`}
-              onDrop={() => handleDrop(index)}
-              onDragOver={handleDragOver}
-            >
-              {piece && (
-                <div
-                  draggable={canMove}
-                  onDragStart={() => handleDragStart(index)}
-                  className={`w-full h-full cursor-grab active:cursor-grabbing ${
-                    canMove ? "shadow-lg" : "opacity-90"
-                  }`}
-                  style={{
-                    backgroundImage: `url(${imageUrl})`,
-                    backgroundSize: "300% 300%",
-                    backgroundPosition: `${(piece.col / 2) * 100}% ${
-                      (piece.row / 2) * 100
-                    }%`,
-                  }}
-                />
-              )}
-            </div>
-          );
-        })}
-      </div>
-      {/* extra piece on side */}
-        {outie && (
-          <div className="relative w-24 h-24 sm:w-28 sm:h-28 bg-nickCream overflow-hidden rounded-lg">
-            <div
-              draggable={false}
-              //   onDragStart={() => handleDragStart(index)}
-              className={`w-full h-full cursor-grab active:cursor-grabbing`}
-              style={{
-                backgroundImage: `url(${imageUrl})`,
-                backgroundSize: "300% 300%",
-                backgroundPosition: `${(pieces[outie].col / 2) * 100}% ${
-                  (pieces[outie].row / 2) * 100
-                }%`,
-              }}
-            />
-          </div>
-        )}
-        {/* image search section */}
-        <div>Image search</div>
         </div>
+          <div className="relative w-24 h-24 sm:w-28 sm:h-28 lg:w-36 lg:h-36 bg-nickCream overflow-hidden rounded-lg">
+          <div
+            className="w-full h-full cursor-default object-cover"
+            style={{
+              backgroundImage: `url(${squareImageUrl})`,
+              backgroundSize: "100%",
+              // backgroundPosition: `${(pieces[outie].col / 2) * 100}% ${
+              //   (pieces[outie].row / 2) * 100
+              // }%`,
+            }}
+          />
+        </div>
+      </div>
+
+      <div className="flex flex-col md:flex-row gap-8 items-center md:items-end w-full justify-between">
+        {/* puzzle grid */}
+        <div className="grid grid-cols-3 grid-rows-3 gap-1 bg-nickBlack p-1 rounded-xl">
+          {board.map((pieceId, index) => {
+            const isEmpty = pieceId === null;
+            const piece = isEmpty ? null : pieces[pieceId];
+            const canMove =
+              !isEmpty && emptyIndex !== -1 && isAdjacent(index, emptyIndex);
+
+            return (
+              <div
+                key={index}
+                className={`relative w-24 h-24 sm:w-28 sm:h-28 lg:w-36 lg:h-36 overflow-hidden rounded-lg ${
+                  isEmpty ? "bg-nickTeal/100 opacity-60 " : "bg-nickCream"
+                }`}
+                onDrop={() => handleDrop(index)}
+                onDragOver={handleDragOver}
+              >
+                {piece && (
+                  <div
+                    draggable={canMove}
+                    onDragStart={() => handleDragStart(index)}
+                    className={`w-full h-full cursor-grab active:cursor-grabbing ${
+                      canMove ? "shadow-lg" : "opacity-90"
+                    }`}
+                    style={{
+                      backgroundImage: `url(${squareImageUrl})`,
+                      backgroundSize: "300% 300%",
+                      backgroundPosition: `${(piece.col / 2) * 100}% ${
+                        (piece.row / 2) * 100
+                      }%`,
+                    }}
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* extra piece on side */}
+        {/* <div className="relative w-24 h-24 sm:w-28 sm:h-28 lg:w-36 lg:h-36 bg-nickCream overflow-hidden rounded-lg">
+          <div
+            className="w-full h-full cursor-default"
+            style={{
+              backgroundImage: `url(${squareImageUrl})`,
+              backgroundSize: "300% 300%",
+              backgroundPosition: `${(pieces[outie].col / 2) * 100}% ${
+                (pieces[outie].row / 2) * 100
+              }%`,
+            }}
+          />
+        </div> */}
+      </div>
     </div>
   );
 };
