@@ -129,9 +129,9 @@ export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
   }
 
   return (
-    <div className="flex flex-col items-center md:items-start gap-8 w-full max-w-3xl ">
+    <div className="flex flex-col items-center md:items-start gap-8 w-full max-w-3xl p-4 rounded-xl bg-white/80 ">
       {/* title + CTA */}
-      <div className="flex justify-center md:justify-between w-full flex-wrap px-8 md:px-0 gap-8">
+      <div className="flex justify-center md:justify-between w-full flex-wrap gap-8">
         <div className="">
         <h1 className="text-3xl font-semibold mb-3 text-nickBlack">
           Photo Puzzle
