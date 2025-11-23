@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { PuzzleBoard } from "./components/PuzzleBoard";
 import { PixabaySearchGrid } from "./components/PixabaySearchGrid";
+import puzzleImg from "../src/assets/square-rose.jpg";
 
 function App() {
-  const [imageUrl, setImageUrl] = useState("/src/assets/square-rose.jpg");
+  const [imageUrl, setImageUrl] = useState(puzzleImg);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const handleSetImage = (url: string) => {
