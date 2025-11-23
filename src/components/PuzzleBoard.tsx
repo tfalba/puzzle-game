@@ -157,6 +157,23 @@ export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
     swapWithEmpty(index);
   };
 
+  const handleSolve = () => {
+    if (outie === null) return;
+    const solved = Array.from({ length: 9 }, (_, idx) =>
+      idx === outie ? null : idx
+    );
+    setBoard(solved);
+  };
+
+  const handleShuffle = () => {
+    setBoard((prev) => {
+      const ids = prev.filter((x): x is number => x !== null);
+      const emptyCount = prev.length - ids.length;
+      const shuffledIds = shuffle(ids);
+      return shuffle([...shuffledIds, ...Array(emptyCount).fill(null)]);
+    });
+  };
+
   // wait until we know the outie and have the cropped image
   if (outie === null || !squareImageUrl) {
     return (
@@ -168,32 +185,28 @@ export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
 
   return (
     <section className="relative z-10 w-full max-w-5xl mx-auto px-2 sm:px-4">
-      <div className="relative flex flex-col items-center md:items-start w-full rounded-[36px] border border-white/50 bg-white/95 px-6 py-10 sm:px-12 shadow-[0_30px_80px_rgba(0,0,0,0.28)] backdrop-blur-xl overflow-hidden">
+      <div className="relative flex flex-col items-center md:items-start w-full rounded-[36px] border border-white/50 bg-white/95 px-6 py-6 sm:py-10 sm:px-12 shadow-[0_30px_80px_rgba(0,0,0,0.28)] backdrop-blur-xl overflow-hidden">
         <div className="pointer-events-none absolute -top-10 right-0 h-48 w-48 rounded-full bg-gradient-to-b from-nickRust/40 to-transparent blur-3xl" />
         <div className="pointer-events-none absolute bottom-0 left-0 h-72 w-72 rounded-full bg-gradient-to-tr from-nickTeal/40 via-nickCream/35 to-transparent blur-[120px]" />
         {/* title + CTA */}
         <div className="flex justify-center md:justify-between w-full flex-wrap gap-8">
-          <div>
-            <div className="flex gap-4">
-            <h1 className="text-3xl font-semibold mb-3 text-nickBlack">
-              Photo Puzzle
-            </h1>
-            <button
-              className="px-6 py-3 rounded-full bg-nickRust text-white font-medium hover:bg-nickBrown transition"
-              onClick={() =>
-                setBoard((prev) => {
-                  const ids = prev.filter((x): x is number => x !== null);
-                  const emptyCount = prev.length - ids.length;
-                  const shuffledIds = shuffle(ids);
-                  return shuffle([
-                    ...shuffledIds,
-                    ...Array(emptyCount).fill(null),
-                  ]);
-                })
-              }
-            >
-              Shuffle
-            </button>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row gap-4 sm:flex-wrap">
+              <h1 className="text-3xl font-semibold text-nickBlack">
+                Photo Puzzle
+              </h1>
+              <button
+                className="px-6 py-3 rounded-full bg-nickRust text-white font-medium hover:bg-nickBrown transition"
+                onClick={() => handleShuffle()}
+              >
+                Shuffle
+              </button>
+              <button
+                className="px-6 py-3 rounded-full border border-nickBrown text-nickBrown font-medium bg-white hover:bg-nickCream transition"
+                onClick={() => handleSolve()}
+              >
+                Solve
+              </button>
             </div>
             <p className="text-nickBrown mb-4">
               Drag a tile into the empty space to reassemble your picture.
@@ -215,14 +228,18 @@ export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
           <div className="relative inline-block">
             <div
               className={`grid grid-cols-3 grid-rows-3 p-4 gap-1 rounded-2xl shadow-[0_18px_40px_rgba(0,0,0,0.3)] bg-transparent transition-all duration-700 ${
-                showFullImage ? "opacity-0 scale-95 pointer-events-none" : "opacity-100"
+                showFullImage
+                  ? "opacity-0 scale-95 pointer-events-none"
+                  : "opacity-100"
               }`}
             >
               {board.map((pieceId, index) => {
                 const isEmpty = pieceId === null;
                 const piece = isEmpty ? null : pieces[pieceId];
                 const canMove =
-                  !isEmpty && emptyIndex !== -1 && isAdjacent(index, emptyIndex);
+                  !isEmpty &&
+                  emptyIndex !== -1 &&
+                  isAdjacent(index, emptyIndex);
 
                 return (
                   <div
@@ -262,9 +279,9 @@ export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
                         style={{
                           backgroundImage: `url(${squareImageUrl})`,
                           backgroundSize: "300% 300%",
-                          backgroundPosition: `${(pieces[outie].col / 2) * 100}% ${
-                            (pieces[outie].row / 2) * 100
-                          }%`,
+                          backgroundPosition: `${
+                            (pieces[outie].col / 2) * 100
+                          }% ${(pieces[outie].row / 2) * 100}%`,
                         }}
                       />
                     )}

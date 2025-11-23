@@ -11,7 +11,7 @@ function App() {
   };
 
   return (
-    <div className="relative min-h-screen w-full flex flex-col gap-10 items-center justify-start bg-gradient-to-br from-nickTeal/70 via-nickCream/50 to-white/90 py-14 px-4 overflow-hidden">
+    <div className="relative min-h-screen w-full flex flex-col gap-6 md:gap-8 items-center justify-start bg-gradient-to-br from-nickTeal/70 via-nickCream/50 to-white/90 py-10 md:py-12 px-4 overflow-hidden">
       <span
         aria-hidden="true"
         className="pointer-events-none absolute -top-32 -right-36 h-96 w-96 rounded-full bg-gradient-to-bl from-nickRust/60 via-nickBrown/40 to-nickTeal/40 blur-3xl opacity-70"
