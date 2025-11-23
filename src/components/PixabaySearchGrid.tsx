@@ -25,8 +25,10 @@ const PIXABAY_API_KEY = import.meta.env.VITE_PIXABAY_API_KEY as string | undefin
 const SQUARE_TOLERANCE = 0.6; // how close width/height must be to be “square”
 
 
-export const PixabaySearchGrid: React.FC<PixabaySearchProps> = ({ handleSetImage}) => {
- const [query, setQuery] = useState("");
+export const PixabaySearchGrid: React.FC<PixabaySearchProps> = ({
+  handleSetImage,
+}) => {
+  const [query, setQuery] = useState("");
   const [images, setImages] = useState<PixabayHit[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,81 +72,85 @@ export const PixabaySearchGrid: React.FC<PixabaySearchProps> = ({ handleSetImage
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto space-y-6 p-4 bg-white/70 rounded-xl">
-       <div className="flex items-center justify-between gap-4">
-        <h1 className="text-3xl font-semibold mb-3 text-nickBlack">
-          Pixabay Photo Search
-        </h1>
-        <button
-          type="button"
-          className="w-10 h-10 rounded-full bg-white text-nickBlack border border-nickBrown/30 hover:bg-nickCream transition text-2xl leading-none"
-          aria-expanded={isExpanded}
-          aria-label={isExpanded ? "Collapse search" : "Expand search"}
-          onClick={() => setIsExpanded((prev) => !prev)}
-        >
-          {isExpanded ? "-" : "+"}
-        </button>
-      </div>
-      {isExpanded && (
-        <>
-          <form
-            onSubmit={handleSearch}
-            className="flex gap-3 items-center bg-white/80 rounded-full px-4 py-2 shadow"
+    <section className="relative z-10 w-full max-w-4xl mx-auto px-2 sm:px-4">
+      <div className="relative space-y-6 rounded-[32px] border border-white/50 bg-white/90 px-6 py-8 sm:px-10 sm:py-10 shadow-[0_25px_70px_rgba(0,0,0,0.25)] backdrop-blur-xl overflow-hidden">
+        <div className="pointer-events-none absolute -top-16 -right-8 h-48 w-48 rounded-full bg-gradient-to-b from-nickTeal/50 to-nickCream/30 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-12 -left-10 h-40 w-52 rounded-full bg-gradient-to-r from-nickBlush/70 via-nickRust/50 to-transparent blur-3xl" />
+        <div className="flex items-center justify-between gap-4">
+          <h1 className="text-3xl font-semibold mb-3 text-nickBlack">
+            Pixabay Photo Search
+          </h1>
+          <button
+            type="button"
+            className="w-10 h-10 rounded-full bg-white text-nickBlack border border-nickBrown/30 hover:bg-nickCream transition text-2xl leading-none"
+            aria-expanded={isExpanded}
+            aria-label={isExpanded ? "Collapse search" : "Expand search"}
+            onClick={() => setIsExpanded((prev) => !prev)}
           >
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search Pixabay (e.g. cats, sunset, puzzle)…"
-              className="flex-1 bg-transparent outline-none text-sm sm:text-base"
-            />
-            <button
-              type="submit"
-              className="px-4 py-2 rounded-full bg-nickRust text-white text-sm font-medium hover:bg-nickBrown transition"
+            {isExpanded ? "-" : "+"}
+          </button>
+        </div>
+        {isExpanded && (
+          <>
+            <form
+              onSubmit={handleSearch}
+              className="flex gap-3 items-center bg-white/90 border border-nickCream/60 rounded-full px-4 py-2 shadow-[0_12px_30px_rgba(0,0,0,0.12)]"
             >
-              Search
-            </button>
-          </form>
-
-          {error && (
-            <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2">
-              {error}
-            </div>
-          )}
-
-          {loading && (
-            <div className="text-sm text-nickBrown">Loading images…</div>
-          )}
-
-          {!loading && !error && images.length === 0 && (
-            <div className="text-sm text-nickBrown/80">
-              No images yet. Try searching for a keyword above.
-            </div>
-          )}
-
-          {/* Results grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-            {images.map((img) => (
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search Pixabay (e.g. cats, sunset, puzzle)…"
+                className="flex-1 bg-transparent outline-none text-sm sm:text-base"
+              />
               <button
-                key={img.id}
-                type="button"
-                className="relative aspect-square overflow-hidden rounded-xl bg-nickCream shadow hover:shadow-md transition"
-                title={img.tags}
-                onClick={() => handleSetImage(img.largeImageURL)}
+                type="submit"
+                className="px-4 py-2 rounded-full bg-nickRust text-white text-sm font-medium hover:bg-nickBrown transition"
               >
-                <img
-                  src={img.webformatURL}
-                  alt={img.tags}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-x-0 bottom-0 bg-black/40 text-[10px] text-white px-2 py-1 truncate">
-                  {img.user}
-                </div>
+                Search
               </button>
-            ))}
-          </div>
-        </>
-      )}
-    </div>
+            </form>
+
+            {error && (
+              <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2">
+                {error}
+              </div>
+            )}
+
+            {loading && (
+              <div className="text-sm text-nickBrown">Loading images…</div>
+            )}
+
+            {!loading && !error && images.length === 0 && (
+              <div className="text-sm text-nickBrown/80">
+                No images yet. Try searching for a keyword above.
+              </div>
+            )}
+
+            {/* Results grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+              {images.map((img) => (
+                <button
+                  key={img.id}
+                  type="button"
+                  className="relative aspect-square overflow-hidden rounded-2xl bg-nickCream shadow-[0_15px_35px_rgba(0,0,0,0.15)] hover:-translate-y-1 hover:shadow-[0_20px_45px_rgba(0,0,0,0.18)] transition"
+                  title={img.tags}
+                  onClick={() => handleSetImage(img.largeImageURL)}
+                >
+                  <img
+                    src={img.webformatURL}
+                    alt={img.tags}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-x-0 bottom-0 bg-black/40 text-[10px] text-white px-2 py-1 truncate">
+                    {img.user}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </section>
   );
 }
