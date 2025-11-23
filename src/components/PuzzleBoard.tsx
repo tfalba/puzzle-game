@@ -45,6 +45,8 @@ export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
   const [board, setBoard] = useState<(number | null)[]>([]);
   const [outie, setOutie] = useState<number | null>(null);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [showMissingPiece, setShowMissingPiece] = useState(false);
+  const [showFullImage, setShowFullImage] = useState(false);
 
   // cropped square version of the image
   const [squareImageUrl, setSquareImageUrl] = useState<string | null>(null);
@@ -93,6 +95,46 @@ export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
 
   const emptyIndex = board.findIndex((cell) => cell === null);
 
+  const isSolved = useMemo(() => {
+    if (outie === null || board.length !== 9 || emptyIndex === -1) return false;
+    return board.every((value, index) =>
+      index === emptyIndex ? value === null : value === index
+    );
+  }, [board, emptyIndex, outie]);
+
+  useEffect(() => {
+    let fullImageTimer: ReturnType<typeof setTimeout> | null = null;
+    if (isSolved) {
+      setShowMissingPiece(true);
+      fullImageTimer = setTimeout(() => {
+        setShowFullImage(true);
+      }, 1500);
+    } else {
+      setShowMissingPiece(false);
+      setShowFullImage(false);
+    }
+    return () => {
+      if (fullImageTimer) {
+        clearTimeout(fullImageTimer);
+      }
+    };
+  }, [isSolved]);
+
+  const swapWithEmpty = (sourceIndex: number) => {
+    setBoard((prev) => {
+      const targetIndex = prev.findIndex((cell) => cell === null);
+      if (targetIndex === -1 || !isAdjacent(sourceIndex, targetIndex)) {
+        return prev;
+      }
+      const next = [...prev];
+      [next[sourceIndex], next[targetIndex]] = [
+        next[targetIndex],
+        next[sourceIndex],
+      ];
+      return next;
+    });
+  };
+
   const handleDragStart = (index: number) => {
     if (emptyIndex !== -1 && isAdjacent(index, emptyIndex)) {
       setDragIndex(index);
@@ -103,20 +145,16 @@ export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
     if (dragIndex === null) return;
     if (targetIndex !== emptyIndex) return; // only drop into empty cell
 
-    setBoard((prev) => {
-      const next = [...prev];
-      [next[dragIndex], next[targetIndex]] = [
-        next[targetIndex],
-        next[dragIndex],
-      ];
-      return next;
-    });
-
+    swapWithEmpty(dragIndex);
     setDragIndex(null);
   };
 
   const handleDragOver: React.DragEventHandler<HTMLDivElement> = (e) => {
     e.preventDefault(); // allow drop
+  };
+
+  const handleTileClick = (index: number) => {
+    swapWithEmpty(index);
   };
 
   // wait until we know the outie and have the cropped image
@@ -160,7 +198,6 @@ export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
             <p className="text-nickBrown mb-4">
               Drag a tile into the empty space to reassemble your picture.
             </p>
-            
           </div>
           <div className="hidden md:block relative w-24 h-24 sm:w-28 sm:h-28 lg:w-36 lg:h-36 bg-nickCream overflow-hidden rounded-2xl border border-white/40 shadow-[0_15px_35px_rgba(0,0,0,0.2)]">
             <div
@@ -168,9 +205,6 @@ export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
               style={{
                 backgroundImage: `url(${squareImageUrl})`,
                 backgroundSize: "100%",
-                // backgroundPosition: `${(pieces[outie].col / 2) * 100}% ${
-                //   (pieces[outie].row / 2) * 100
-                // }%`,
               }}
             />
           </div>
@@ -178,58 +212,80 @@ export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
 
         <div className="flex flex-col md:flex-row gap-8 items-center md:items-end w-full justify-between">
           {/* puzzle grid */}
-          <div className="grid grid-cols-3 grid-rows-3 p-4 gap-1 bg-transparent p-1 rounded-2xl shadow-[0_18px_40px_rgba(0,0,0,0.3)]">
-            {board.map((pieceId, index) => {
-              const isEmpty = pieceId === null;
-              const piece = isEmpty ? null : pieces[pieceId];
-              const canMove =
-                !isEmpty && emptyIndex !== -1 && isAdjacent(index, emptyIndex);
-
-              return (
-                <div
-                  key={index}
-                  className={`relative w-24 h-24 sm:w-28 sm:h-28 lg:w-36 lg:h-36 overflow-hidden ${
-                    isEmpty ? "bg-nickTeal/30 opacity-80 " : "bg-nickCream shadow-inner"
-                  }`}
-                  onDrop={() => handleDrop(index)}
-                  onDragOver={handleDragOver}
-                >
-                  {piece && (
-                    <div
-                      draggable={canMove}
-                      onDragStart={() => handleDragStart(index)}
-                      className={`w-full h-full cursor-grab active:cursor-grabbing transition-transform ${
-                        canMove
-                          ? "shadow-[0_12px_25px_rgba(0,0,0,0.25)] hover:-translate-y-0.5"
-                          : "opacity-90"
-                      }`}
-                      style={{
-                        backgroundImage: `url(${squareImageUrl})`,
-                        backgroundSize: "300% 300%",
-                        backgroundPosition: `${(piece.col / 2) * 100}% ${
-                          (piece.row / 2) * 100
-                        }%`,
-                      }}
-                    />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* extra piece on side */}
-          {/* <div className="relative w-24 h-24 sm:w-28 sm:h-28 lg:w-36 lg:h-36 bg-nickCream overflow-hidden rounded-lg">
+          <div className="relative inline-block">
             <div
-              className="w-full h-full cursor-default"
-              style={{
-                backgroundImage: `url(${squareImageUrl})`,
-                backgroundSize: "300% 300%",
-                backgroundPosition: `${(pieces[outie].col / 2) * 100}% ${
-                  (pieces[outie].row / 2) * 100
-                }%`,
-              }}
-            />
-          </div> */}
+              className={`grid grid-cols-3 grid-rows-3 p-4 gap-1 rounded-2xl shadow-[0_18px_40px_rgba(0,0,0,0.3)] bg-transparent transition-all duration-700 ${
+                showFullImage ? "opacity-0 scale-95 pointer-events-none" : "opacity-100"
+              }`}
+            >
+              {board.map((pieceId, index) => {
+                const isEmpty = pieceId === null;
+                const piece = isEmpty ? null : pieces[pieceId];
+                const canMove =
+                  !isEmpty && emptyIndex !== -1 && isAdjacent(index, emptyIndex);
+
+                return (
+                  <div
+                    key={index}
+                    className={`relative w-24 h-24 sm:w-28 sm:h-28 lg:w-36 lg:h-36 overflow-hidden ${
+                      isEmpty
+                        ? "bg-nickTeal/30 opacity-80 "
+                        : "bg-nickCream shadow-inner"
+                    }`}
+                    onDrop={() => handleDrop(index)}
+                    onDragOver={handleDragOver}
+                  >
+                    {piece && (
+                      <div
+                        draggable={canMove}
+                        onDragStart={() => handleDragStart(index)}
+                        className={`w-full h-full cursor-grab active:cursor-grabbing transition-transform ${
+                          canMove
+                            ? "shadow-[0_12px_25px_rgba(0,0,0,0.25)] hover:-translate-y-0.5"
+                            : "opacity-90"
+                        }`}
+                        style={{
+                          backgroundImage: `url(${squareImageUrl})`,
+                          backgroundSize: "300% 300%",
+                          backgroundPosition: `${(piece.col / 2) * 100}% ${
+                            (piece.row / 2) * 100
+                          }%`,
+                        }}
+                        onClick={() => handleTileClick(index)}
+                      />
+                    )}
+                    {isEmpty && outie !== null && (
+                      <div
+                        className={`absolute inset-0 pointer-events-none transition-opacity duration-700 ease-out ${
+                          showMissingPiece ? "opacity-100" : "opacity-0"
+                        }`}
+                        style={{
+                          backgroundImage: `url(${squareImageUrl})`,
+                          backgroundSize: "300% 300%",
+                          backgroundPosition: `${(pieces[outie].col / 2) * 100}% ${
+                            (pieces[outie].row / 2) * 100
+                          }%`,
+                        }}
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <div
+              className={`absolute inset-0 flex items-center justify-center transition-opacity duration-700 ${
+                showFullImage ? "opacity-100" : "opacity-0 pointer-events-none"
+              }`}
+            >
+              <div className="w-full h-full rounded-[32px] overflow-hidden border border-white/60 shadow-[0_25px_60px_rgba(0,0,0,0.3)] bg-white">
+                <img
+                  src={squareImageUrl}
+                  alt="Completed puzzle"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>

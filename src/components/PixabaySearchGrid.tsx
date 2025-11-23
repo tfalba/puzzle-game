@@ -22,10 +22,10 @@ type PixabayResponse = {
   totalHits: number;
 };
 
-
-const PIXABAY_API_KEY = import.meta.env.VITE_PIXABAY_API_KEY as string | undefined;
+const PIXABAY_API_KEY = import.meta.env.VITE_PIXABAY_API_KEY as
+  | string
+  | undefined;
 const SQUARE_TOLERANCE = 0.6; // how close width/height must be to be “square”
-
 
 export const PixabaySearchGrid: React.FC<PixabaySearchProps> = ({
   handleSetImage,
@@ -46,7 +46,9 @@ export const PixabaySearchGrid: React.FC<PixabaySearchProps> = ({
     setError(null);
 
     if (!PIXABAY_API_KEY) {
-      setError("Missing Pixabay API key. Set VITE_PIXABAY_API_KEY in your .env.local.");
+      setError(
+        "Missing Pixabay API key. Set VITE_PIXABAY_API_KEY in your .env.local."
+      );
       return;
     }
     if (!query.trim()) return;
@@ -177,4 +179,4 @@ export const PixabaySearchGrid: React.FC<PixabaySearchProps> = ({
       </div>
     </div>
   );
-}
+};
