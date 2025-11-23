@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { PuzzleBoard } from "./components/PuzzleBoard";
 import { PixabaySearchGrid } from "./components/PixabaySearchGrid";
 
