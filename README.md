@@ -1,73 +1,67 @@
-# React + TypeScript + Vite
+# PuzzleQuest Studio
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Create a personal sliding puzzle from any Pixabay photo, play it directly in the browser, and celebrate when every tile clicks into place.
 
-Currently, two official plugins are available:
+## TL;DR (Short Version)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Search Pixabay through a slide-out control, pick an image, and it instantly becomes your puzzle board.
+- Drag, drop, or simply click tiles adjacent to the empty slot to solve the 3×3 board.
+- When everything lines up, the missing piece fades in and the finished image is revealed at full size.
+- Built with React, TypeScript, Vite, and Tailwind CSS; just run `npm install` + `npm run dev`.
 
-## React Compiler
+## Long Version
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### What the App Does
 
-## Expanding the ESLint configuration
+PuzzleQuest Studio turns image-hunting and puzzle-solving into a single experience:
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+1. **Hero + Controls** – A hero banner sets the scene, and a floating “+” button opens the media drawer.
+2. **Pixabay Drawer** – The slide-out panel lets you search Pixabay (via API) for safe, square-ish photos; selecting one updates the puzzle instantly and closes the drawer.
+3. **Puzzle Board** – Tiles support drag-and-drop or single-click moves. A Shuffle button randomizes tiles, and a Solve button (next to Shuffle) restores the correct order for quick demos or resets.
+4. **Win Celebration** – Once every tile returns home, the missing piece fades in, the board dissolves, and the full image appears so players can admire the completed photo.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### Key Features
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+- **Interactive Pixabay search** with debounced form, error states, and a scrollable results grid.
+- **Puzzle mechanics** that include drag, drop, click-to-move, solve, and shuffle interactions.
+- **Finish animations** that use timed fades to reveal the missing tile and final photo.
+- **Responsive styling** powered by Tailwind custom colors, gradients, and glassmorphism accents.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+### How It Was Built
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+- **Framework:** React 18 + Vite + TypeScript for fast DX and type safety.
+- **Styling:** Tailwind CSS with a custom palette (nickBlack, nickRust, nickTeal, etc.).
+- **State & Effects:** React hooks manage board state, Pixabay results, modal visibility, and celebration timers.
+- **API Integration:** Fetches Pixabay via `VITE_PIXABAY_API_KEY`; results filtered to near-square images for puzzle parity.
+- **Tooling:** ESLint config from Vite template plus TypeScript strictness; Vite handles bundling and HMR.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Getting Started
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+1. **Install dependencies**
+   ```bash
+   npm install
+   ```
+2. **Add environment variables** – Create `.env` (or `.env.local`) with:
+   ```bash
+   VITE_PIXABAY_API_KEY=your_api_key_here
+   ```
+   You can request a free key at [pixabay.com/api/docs](https://pixabay.com/api/docs/).
+3. **Start the dev server**
+   ```bash
+   npm run dev
+   ```
+   Visit the provided URL (usually `http://localhost:5173`).
+
+### Development Notes
+
+- The Pixbay drawer clears its query/results every time it closes to keep things tidy.
+- Puzzle solving logic checks each tile index; when solved it triggers a fade-in/out animation sequence.
+- The codebase lives under `src/` with main components in `src/components`.
+
+### Roadmap Ideas
+
+- Difficulty selector (different grid sizes).
+- Progress tracking / move counter / timers.
+- Offline image uploads instead of Pixabay-only flow.
+
+Enjoy crafting puzzles from your favorite Pixabay finds! If you extend the project, feel free to document new features here. 
