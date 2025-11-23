@@ -130,18 +130,16 @@ export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
 
   return (
     <section className="relative z-10 w-full max-w-5xl mx-auto px-2 sm:px-4">
-      <div className="relative flex flex-col items-center md:items-start gap-8 w-full rounded-[36px] border border-white/50 bg-white/95 px-6 py-10 sm:px-12 shadow-[0_30px_80px_rgba(0,0,0,0.28)] backdrop-blur-xl overflow-hidden">
+      <div className="relative flex flex-col items-center md:items-start w-full rounded-[36px] border border-white/50 bg-white/95 px-6 py-10 sm:px-12 shadow-[0_30px_80px_rgba(0,0,0,0.28)] backdrop-blur-xl overflow-hidden">
         <div className="pointer-events-none absolute -top-10 right-0 h-48 w-48 rounded-full bg-gradient-to-b from-nickRust/40 to-transparent blur-3xl" />
         <div className="pointer-events-none absolute bottom-0 left-0 h-72 w-72 rounded-full bg-gradient-to-tr from-nickTeal/40 via-nickCream/35 to-transparent blur-[120px]" />
         {/* title + CTA */}
         <div className="flex justify-center md:justify-between w-full flex-wrap gap-8">
           <div>
+            <div className="flex gap-4">
             <h1 className="text-3xl font-semibold mb-3 text-nickBlack">
               Photo Puzzle
             </h1>
-            <p className="text-nickBrown mb-4">
-              Drag a tile into the empty space to reassemble your picture.
-            </p>
             <button
               className="px-6 py-3 rounded-full bg-nickRust text-white font-medium hover:bg-nickBrown transition"
               onClick={() =>
@@ -158,8 +156,13 @@ export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
             >
               Shuffle
             </button>
+            </div>
+            <p className="text-nickBrown mb-4">
+              Drag a tile into the empty space to reassemble your picture.
+            </p>
+            
           </div>
-          <div className="relative w-24 h-24 sm:w-28 sm:h-28 lg:w-36 lg:h-36 bg-nickCream overflow-hidden rounded-2xl border border-white/40 shadow-[0_15px_35px_rgba(0,0,0,0.2)]">
+          <div className="hidden md:block relative w-24 h-24 sm:w-28 sm:h-28 lg:w-36 lg:h-36 bg-nickCream overflow-hidden rounded-2xl border border-white/40 shadow-[0_15px_35px_rgba(0,0,0,0.2)]">
             <div
               className="w-full h-full cursor-default object-cover"
               style={{
@@ -175,7 +178,7 @@ export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
 
         <div className="flex flex-col md:flex-row gap-8 items-center md:items-end w-full justify-between">
           {/* puzzle grid */}
-          <div className="grid grid-cols-3 grid-rows-3 gap-1 bg-gradient-to-br from-nickBlack via-nickBrown to-nickRust p-1 rounded-2xl shadow-[0_18px_40px_rgba(0,0,0,0.3)]">
+          <div className="grid grid-cols-3 grid-rows-3 p-4 gap-1 bg-transparent p-1 rounded-2xl shadow-[0_18px_40px_rgba(0,0,0,0.3)]">
             {board.map((pieceId, index) => {
               const isEmpty = pieceId === null;
               const piece = isEmpty ? null : pieces[pieceId];
@@ -185,8 +188,8 @@ export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
               return (
                 <div
                   key={index}
-                  className={`relative w-24 h-24 sm:w-28 sm:h-28 lg:w-36 lg:h-36 overflow-hidden rounded-xl ${
-                    isEmpty ? "bg-nickTeal/20 opacity-70 " : "bg-nickCream shadow-inner"
+                  className={`relative w-24 h-24 sm:w-28 sm:h-28 lg:w-36 lg:h-36 overflow-hidden ${
+                    isEmpty ? "bg-nickTeal/30 opacity-80 " : "bg-nickCream shadow-inner"
                   }`}
                   onDrop={() => handleDrop(index)}
                   onDragOver={handleDragOver}
