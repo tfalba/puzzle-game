@@ -6,14 +6,13 @@ type Piece = {
   col: number;
 };
 
-const createPieces = (): Piece[] =>
-  Array.from({ length: 9 }, (_, id) => ({
+const createPieces = (size: number): Piece[] =>
+  Array.from({ length: size * size }, (_, id) => ({
     id,
-    row: Math.floor(id / 3),
-    col: id % 3,
+    row: Math.floor(id / size),
+    col: id % size,
   }));
 
-// simple shuffle helper
 const shuffle = <T,>(arr: T[]): T[] => {
   const copy = [...arr];
   for (let i = copy.length - 1; i > 0; i--) {
@@ -23,11 +22,11 @@ const shuffle = <T,>(arr: T[]): T[] => {
   return copy;
 };
 
-const isAdjacent = (a: number, b: number) => {
-  const rowA = Math.floor(a / 3);
-  const colA = a % 3;
-  const rowB = Math.floor(b / 3);
-  const colB = b % 3;
+const isAdjacent = (a: number, b: number, size: number) => {
+  const rowA = Math.floor(a / size);
+  const colA = a % size;
+  const rowB = Math.floor(b / size);
+  const colB = b % size;
 
   const rowDiff = Math.abs(rowA - rowB);
   const colDiff = Math.abs(colA - colB);
@@ -35,12 +34,49 @@ const isAdjacent = (a: number, b: number) => {
   return (rowDiff === 1 && colDiff === 0) || (rowDiff === 0 && colDiff === 1);
 };
 
+const getAdjacentIndices = (index: number, size: number) => {
+  const row = Math.floor(index / size);
+  const col = index % size;
+  const neighbors: number[] = [];
+
+  if (row > 0) neighbors.push(index - size);
+  if (row < size - 1) neighbors.push(index + size);
+  if (col > 0) neighbors.push(index - 1);
+  if (col < size - 1) neighbors.push(index + 1);
+
+  return neighbors;
+};
+
+const shuffleSolvable = (
+  board: (number | null)[],
+  size: number,
+  moves: number
+) => {
+  const next = [...board];
+  let emptyIndex = next.findIndex((cell) => cell === null);
+  let previousIndex: number | null = null;
+
+  for (let i = 0; i < moves; i++) {
+    let candidates = getAdjacentIndices(emptyIndex, size);
+    if (previousIndex !== null && candidates.length > 1) {
+      candidates = candidates.filter((idx) => idx !== previousIndex);
+    }
+    const swapIndex = candidates[Math.floor(Math.random() * candidates.length)];
+    [next[emptyIndex], next[swapIndex]] = [next[swapIndex], next[emptyIndex]];
+    previousIndex = emptyIndex;
+    emptyIndex = swapIndex;
+  }
+
+  return next;
+};
+
 interface PuzzleBoardProps {
   imageUrl: string; // can be any aspect ratio now
 }
 
 export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
-  const pieces = useMemo(() => createPieces(), []);
+  const [gridSize, setGridSize] = useState(3);
+  const pieces = useMemo(() => createPieces(gridSize), [gridSize]);
 
   const [board, setBoard] = useState<(number | null)[]>([]);
   const [outie, setOutie] = useState<number | null>(null);
@@ -82,25 +118,33 @@ export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
     img.src = imageUrl;
   }, [imageUrl]);
 
-  // board: 9 cells with piece ids or null (empty slot)
+  // board: N cells with piece ids or null (empty slot)
   useEffect(() => {
-    const ids = Array.from({ length: 9 }, (_, i) => i);
-    const shuffled = shuffle(ids);
-    const removed = shuffled.pop()!;
-    setOutie(removed);
-
-    const board8 = shuffle([...shuffled, null]);
-    setBoard(board8);
-  }, []);
+    const total = gridSize * gridSize;
+    const nextOutie = Math.floor(Math.random() * total);
+    const solved = Array.from({ length: total }, (_, idx) =>
+      idx === nextOutie ? null : idx
+    );
+    const shuffledBoard = shuffleSolvable(solved, gridSize, total * 25);
+    setOutie(nextOutie);
+    setBoard(shuffledBoard);
+    setShowMissingPiece(false);
+    setShowFullImage(false);
+  }, [gridSize]);
 
   const emptyIndex = board.findIndex((cell) => cell === null);
 
   const isSolved = useMemo(() => {
-    if (outie === null || board.length !== 9 || emptyIndex === -1) return false;
+    if (
+      outie === null ||
+      board.length !== gridSize * gridSize ||
+      emptyIndex === -1
+    )
+      return false;
     return board.every((value, index) =>
       index === emptyIndex ? value === null : value === index
     );
-  }, [board, emptyIndex, outie]);
+  }, [board, emptyIndex, gridSize, outie]);
 
   useEffect(() => {
     let fullImageTimer: ReturnType<typeof setTimeout> | null = null;
@@ -123,7 +167,7 @@ export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
   const swapWithEmpty = (sourceIndex: number) => {
     setBoard((prev) => {
       const targetIndex = prev.findIndex((cell) => cell === null);
-      if (targetIndex === -1 || !isAdjacent(sourceIndex, targetIndex)) {
+      if (targetIndex === -1 || !isAdjacent(sourceIndex, targetIndex, gridSize)) {
         return prev;
       }
       const next = [...prev];
@@ -136,7 +180,7 @@ export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
   };
 
   const handleDragStart = (index: number) => {
-    if (emptyIndex !== -1 && isAdjacent(index, emptyIndex)) {
+    if (emptyIndex !== -1 && isAdjacent(index, emptyIndex, gridSize)) {
       setDragIndex(index);
     }
   };
@@ -159,19 +203,33 @@ export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
 
   const handleSolve = () => {
     if (outie === null) return;
-    const solved = Array.from({ length: 9 }, (_, idx) =>
+    const solved = Array.from({ length: gridSize * gridSize }, (_, idx) =>
       idx === outie ? null : idx
     );
     setBoard(solved);
   };
 
   const handleShuffle = () => {
-    setBoard((prev) => {
-      const ids = prev.filter((x): x is number => x !== null);
-      const emptyCount = prev.length - ids.length;
-      const shuffledIds = shuffle(ids);
-      return shuffle([...shuffledIds, ...Array(emptyCount).fill(null)]);
-    });
+    if (outie === null) return;
+    const total = gridSize * gridSize;
+    const solved = Array.from({ length: total }, (_, idx) =>
+      idx === outie ? null : idx
+    );
+    const shuffledBoard = shuffleSolvable(solved, gridSize, total * 25);
+    setBoard(shuffledBoard);
+    setShowMissingPiece(false);
+    setShowFullImage(false);
+  };
+
+  const handleGridSizeChange = (
+    event: React.ChangeEvent<HTMLSelectElement>
+  ) => {
+    const nextSize = Number(event.target.value);
+    setOutie(null);
+    setBoard([]);
+    setShowMissingPiece(false);
+    setShowFullImage(false);
+    setGridSize(nextSize);
   };
 
   // wait until we know the outie and have the cropped image
@@ -182,6 +240,15 @@ export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
       </div>
     );
   }
+
+  const tileSize =
+    gridSize === 2
+      ? "clamp(5.5rem, 16vw, 8.5rem)"
+      : gridSize === 4
+        ? "clamp(3.25rem, 9vw, 5.25rem)"
+        : "clamp(4.5rem, 12vw, 6.5rem)";
+  const backgroundSize = `${gridSize * 100}% ${gridSize * 100}%`;
+  const positionScale = gridSize - 1;
 
   return (
     <section className="relative z-10 w-full max-w-5xl mx-auto px-2 sm:px-4">
@@ -195,6 +262,19 @@ export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
               <h1 className="text-3xl font-semibold text-nickBlack">
                 Photo Puzzle
               </h1>
+              <label className="flex items-center gap-3 px-4 py-2 rounded-full bg-white/80 border border-nickCream text-nickBrown font-medium">
+                Size
+                <select
+                  value={gridSize}
+                  onChange={handleGridSizeChange}
+                  aria-label="Select puzzle size"
+                  className="bg-white border border-nickCream rounded-full px-3 py-1 text-nickBrown focus:outline-none focus:ring-2 focus:ring-nickRust/50"
+                >
+                  <option value={2}>2 x 2</option>
+                  <option value={3}>3 x 3</option>
+                  <option value={4}>4 x 4</option>
+                </select>
+              </label>
               <button
                 className="px-6 py-3 rounded-full bg-nickRust text-white font-medium hover:bg-nickBrown transition"
                 onClick={() => handleShuffle()}
@@ -227,11 +307,15 @@ export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
           {/* puzzle grid */}
           <div className="relative inline-block">
             <div
-              className={`grid grid-cols-3 grid-rows-3 p-4 gap-1 rounded-2xl shadow-[0_18px_40px_rgba(0,0,0,0.3)] bg-transparent transition-all duration-700 ${
+              className={`grid p-4 gap-1 rounded-2xl shadow-[0_18px_40px_rgba(0,0,0,0.3)] bg-transparent transition-all duration-700 ${
                 showFullImage
                   ? "opacity-0 scale-95 pointer-events-none"
                   : "opacity-100"
               }`}
+              style={{
+                gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))`,
+                gridTemplateRows: `repeat(${gridSize}, minmax(0, 1fr))`,
+              }}
             >
               {board.map((pieceId, index) => {
                 const isEmpty = pieceId === null;
@@ -239,16 +323,17 @@ export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
                 const canMove =
                   !isEmpty &&
                   emptyIndex !== -1 &&
-                  isAdjacent(index, emptyIndex);
+                  isAdjacent(index, emptyIndex, gridSize);
 
                 return (
                   <div
                     key={index}
-                    className={`relative w-24 h-24 sm:w-28 sm:h-28 lg:w-36 lg:h-36 overflow-hidden ${
+                    className={`relative overflow-hidden ${
                       isEmpty
                         ? "bg-nickTeal/30 opacity-80 "
                         : "bg-nickCream shadow-inner"
                     }`}
+                    style={{ width: tileSize, height: tileSize }}
                     onDrop={() => handleDrop(index)}
                     onDragOver={handleDragOver}
                   >
@@ -263,10 +348,10 @@ export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
                         }`}
                         style={{
                           backgroundImage: `url(${squareImageUrl})`,
-                          backgroundSize: "300% 300%",
-                          backgroundPosition: `${(piece.col / 2) * 100}% ${
-                            (piece.row / 2) * 100
-                          }%`,
+                          backgroundSize,
+                          backgroundPosition: `${
+                            (piece.col / positionScale) * 100
+                          }% ${(piece.row / positionScale) * 100}%`,
                         }}
                         onClick={() => handleTileClick(index)}
                       />
@@ -278,10 +363,10 @@ export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
                         }`}
                         style={{
                           backgroundImage: `url(${squareImageUrl})`,
-                          backgroundSize: "300% 300%",
+                          backgroundSize,
                           backgroundPosition: `${
-                            (pieces[outie].col / 2) * 100
-                          }% ${(pieces[outie].row / 2) * 100}%`,
+                            (pieces[outie].col / positionScale) * 100
+                          }% ${(pieces[outie].row / positionScale) * 100}%`,
                         }}
                       />
                     )}
