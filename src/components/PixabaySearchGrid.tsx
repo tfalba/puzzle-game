@@ -22,9 +22,6 @@ type PixabayResponse = {
   totalHits: number;
 };
 
-const PIXABAY_API_KEY = import.meta.env.VITE_PIXABAY_API_KEY as
-  | string
-  | undefined;
 const SQUARE_TOLERANCE = 0.6; // how close width/height must be to be “square”
 
 export const PixabaySearchGrid: React.FC<PixabaySearchProps> = ({
@@ -45,20 +42,13 @@ export const PixabaySearchGrid: React.FC<PixabaySearchProps> = ({
     e.preventDefault();
     setError(null);
 
-    if (!PIXABAY_API_KEY) {
-      setError(
-        "Missing Pixabay API key. Set VITE_PIXABAY_API_KEY in your .env.local."
-      );
-      return;
-    }
     if (!query.trim()) return;
 
     setLoading(true);
     try {
       const encoded = encodeURIComponent(query.trim());
-      const url = `https://pixabay.com/api/?key=${PIXABAY_API_KEY}&q=${encoded}&image_type=photo&per_page=50&safesearch=true`;
+      const res = await fetch(`/api/pixabay?q=${encoded}&per_page=50`);
 
-      const res = await fetch(url);
       if (!res.ok) {
         throw new Error(`Request failed with status ${res.status}`);
       }
