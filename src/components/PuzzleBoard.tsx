@@ -363,7 +363,7 @@ export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row gap-8 items-center md:items-center w-full justify-between">
+        <div className="flex flex-col lg:flex-row gap-8 items-center w-full justify-between">
           {/* puzzle grid */}
           <div className="relative inline-block">
             <div
