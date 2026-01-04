@@ -13,15 +13,6 @@ const createPieces = (size: number): Piece[] =>
     col: id % size,
   }));
 
-const shuffle = <T,>(arr: T[]): T[] => {
-  const copy = [...arr];
-  for (let i = copy.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
-  }
-  return copy;
-};
-
 const isAdjacent = (a: number, b: number, size: number) => {
   const rowA = Math.floor(a / size);
   const colA = a % size;
