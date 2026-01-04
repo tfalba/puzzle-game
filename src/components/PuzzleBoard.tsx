@@ -1,4 +1,10 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 type Piece = {
   id: number;
@@ -65,6 +71,33 @@ interface PuzzleBoardProps {
   imageUrl: string; // can be any aspect ratio now
 }
 
+const formatClock = (totalSeconds: number) => {
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  const padded = (value: number) => String(value).padStart(2, "0");
+  return hours > 0
+    ? `${padded(hours)}:${padded(minutes)}:${padded(seconds)}`
+    : `${padded(minutes)}:${padded(seconds)}`;
+};
+
+const formatTypedTime = (totalSeconds: number) => {
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  const parts = [];
+
+  if (hours > 0) {
+    parts.push(`${hours} ${hours === 1 ? "hour" : "hours"}`);
+  }
+  if (minutes > 0 || hours > 0) {
+    parts.push(`${minutes} ${minutes === 1 ? "minute" : "minutes"}`);
+  }
+  parts.push(`${seconds} ${seconds === 1 ? "second" : "seconds"}`);
+
+  return parts.join(" ");
+};
+
 export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
   const [gridSize, setGridSize] = useState(3);
   const pieces = useMemo(() => createPieces(gridSize), [gridSize]);
@@ -74,9 +107,21 @@ export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [showMissingPiece, setShowMissingPiece] = useState(false);
   const [showFullImage, setShowFullImage] = useState(false);
+  const [moves, setMoves] = useState(0);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [startTime, setStartTime] = useState<number | null>(null);
+  const [timerRunning, setTimerRunning] = useState(true);
+  const lastDragAtRef = useRef(0);
 
   // cropped square version of the image
   const [squareImageUrl, setSquareImageUrl] = useState<string | null>(null);
+
+  const resetGameStats = useCallback(() => {
+    setMoves(0);
+    setElapsedSeconds(0);
+    setStartTime(Date.now());
+    setTimerRunning(true);
+  }, []);
 
   // Crop incoming image to a centered square using an offscreen canvas
   useEffect(() => {
@@ -109,6 +154,11 @@ export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
     img.src = imageUrl;
   }, [imageUrl]);
 
+  useEffect(() => {
+    if (!imageUrl) return;
+    resetGameStats();
+  }, [imageUrl, resetGameStats]);
+
   // board: N cells with piece ids or null (empty slot)
   useEffect(() => {
     const total = gridSize * gridSize;
@@ -121,7 +171,8 @@ export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
     setBoard(shuffledBoard);
     setShowMissingPiece(false);
     setShowFullImage(false);
-  }, [gridSize]);
+    resetGameStats();
+  }, [gridSize, resetGameStats]);
 
   const emptyIndex = board.findIndex((cell) => cell === null);
 
@@ -144,6 +195,7 @@ export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
       fullImageTimer = setTimeout(() => {
         setShowFullImage(true);
       }, 1500);
+      setTimerRunning(false);
     } else {
       setShowMissingPiece(false);
       setShowFullImage(false);
@@ -154,6 +206,16 @@ export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
       }
     };
   }, [isSolved]);
+
+  useEffect(() => {
+    if (!timerRunning || startTime === null) return;
+
+    const intervalId = setInterval(() => {
+      setElapsedSeconds(Math.floor((Date.now() - startTime) / 1000));
+    }, 1000);
+
+    return () => clearInterval(intervalId);
+  }, [timerRunning, startTime]);
 
   const swapWithEmpty = (sourceIndex: number) => {
     setBoard((prev) => {
@@ -166,6 +228,7 @@ export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
         next[targetIndex],
         next[sourceIndex],
       ];
+      setMoves(moves + 1);
       return next;
     });
   };
@@ -173,15 +236,18 @@ export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
   const handleDragStart = (index: number) => {
     if (emptyIndex !== -1 && isAdjacent(index, emptyIndex, gridSize)) {
       setDragIndex(index);
+      lastDragAtRef.current = Date.now();
     }
   };
 
   const handleDrop = (targetIndex: number) => {
     if (dragIndex === null) return;
     if (targetIndex !== emptyIndex) return; // only drop into empty cell
+    console.log("handle drop");
 
     swapWithEmpty(dragIndex);
     setDragIndex(null);
+    lastDragAtRef.current = Date.now();
   };
 
   const handleDragOver: React.DragEventHandler<HTMLDivElement> = (e) => {
@@ -189,6 +255,8 @@ export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
   };
 
   const handleTileClick = (index: number) => {
+    if (Date.now() - lastDragAtRef.current < 250) return;
+    console.log("handle tile click");
     swapWithEmpty(index);
   };
 
@@ -210,6 +278,7 @@ export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
     setBoard(shuffledBoard);
     setShowMissingPiece(false);
     setShowFullImage(false);
+    resetGameStats();
   };
 
   const handleGridSizeChange = (
@@ -234,10 +303,10 @@ export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
 
   const tileSize =
     gridSize === 2
-      ? "clamp(5.5rem, 16vw, 8.5rem)"
+      ? "clamp(5.5rem, 22vw, 8.5rem)"
       : gridSize === 4
-        ? "clamp(3.25rem, 9vw, 5.25rem)"
-        : "clamp(4.5rem, 12vw, 6.5rem)";
+        ? "clamp(4rem, 15vw, 5.25rem)"
+        : "clamp(4.5rem, 18vw, 6.5rem)";
   const backgroundSize = `${gridSize * 100}% ${gridSize * 100}%`;
   const positionScale = gridSize - 1;
 
@@ -294,7 +363,7 @@ export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row gap-8 items-center md:items-end w-full justify-between">
+        <div className="flex flex-col md:flex-row gap-8 items-center md:items-center w-full justify-between">
           {/* puzzle grid */}
           <div className="relative inline-block">
             <div
@@ -377,6 +446,25 @@ export const PuzzleBoard: React.FC<PuzzleBoardProps> = ({ imageUrl }) => {
                   className="w-full h-full object-cover"
                 />
               </div>
+            </div>
+          </div>
+          <div className="mx-auto w-full max-w-xs rounded-3xl border border-white/60 bg-white/80 px-6 py-6 text-nickBrown shadow-[0_18px_40px_rgba(0,0,0,0.2)] backdrop-blur-sm">
+            <div className="text-sm uppercase tracking-[0.2em] text-nickRust/80">
+              Timer
+            </div>
+            <div className="mt-3 text-3xl font-semibold text-nickBlack">
+              {formatClock(elapsedSeconds)}
+            </div>
+            <div className="mt-2 text-sm text-nickBrown/80">
+              {formatTypedTime(elapsedSeconds)}
+            </div>
+            <div className="mt-6 flex items-center justify-between rounded-2xl border border-nickCream/80 bg-white px-4 py-3 text-nickBrown">
+              <span className="text-sm uppercase tracking-[0.2em] text-nickRust/70">
+                Moves
+              </span>
+              <span className="text-2xl font-semibold text-nickBlack">
+                {moves}
+              </span>
             </div>
           </div>
         </div>
